@@ -40,8 +40,6 @@
 
 int main(void) {
 	
-	printf("Hello World\n");
-
 	//tpruss_intc_initdata intc = PRUSS_INTC_INITDATA;
 	tpruss_intc_initdata intc = INT2;
 
@@ -53,8 +51,6 @@ int main(void) {
 	prussdrv_exec_program(PRU_NUM0, "./pru0.bin");
 
 	printf("Waiting for Event 1\n");
-	//prussdrv_pru_wait_event(3);
-	//prussdrv_pru_clear_event(3, 24);
 
 	unsigned char* pruDataMem;
 	prussdrv_map_prumem(PRUSS0_PRU0_DATARAM, (void **)&pruDataMem);
@@ -64,13 +60,8 @@ int main(void) {
 		prussdrv_pru_wait_event(3);
 		prussdrv_pru_clear_event(3, 24);
 		long val = *((long*)pruDataMem);
-		printf("Raw Value: % 4.1f\n", val/10.);
+		printf("Current Temperature: % 4.1f\n", val/10.);
 	}
-
-	//prussdrv_pru_wait_event(3);
-	//prussdrv_pru_clear_event(3, 24);
-	//printf("Waiting for Event 2\n");
-	//prussdrv_pru_wait_event(3);
 
 	return 0;
 }
