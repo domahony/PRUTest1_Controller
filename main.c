@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <prussdrv.h>
 #include <pruss_intc_mapping.h>
+#include "GY80.h"
 
 #define PRU_NUM0 0
 #define PRU_NUM1 1
@@ -52,15 +53,15 @@ int main(void) {
 
 	printf("Waiting for Event 1\n");
 
-	unsigned char* pruDataMem;
-	prussdrv_map_prumem(PRUSS0_PRU0_DATARAM, (void **)&pruDataMem);
-	pruDataMem += 0x800;
+	void* pruDataMem;
+	prussdrv_map_prumem(PRUSS0_PRU0_DATARAM, &pruDataMem);
+
+	GY80 *gy80 = (GY80*)(pruDataMem + 0x888);
 
 	while (1) {
 		prussdrv_pru_wait_event(3);
 		prussdrv_pru_clear_event(3, 24);
-		long val = *((long*)pruDataMem);
-		printf("Current Temperature: % 4.1f\n", val/10.);
+		printf("Current Temperature: % 4.1f\n", gy80->temperature);
 	}
 
 	return 0;
