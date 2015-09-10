@@ -9,7 +9,33 @@
 #define GY80_H_
 
 typedef struct {
+
+	union {
+		float v[3];
+
+		struct {
+			float x;
+			float y;
+			float z;
+		};
+
+		struct {
+			float heading;
+			float pitch;
+			float roll;
+		};
+	};
+} VecType3D;
+
+
+typedef struct {
+
 	float temperature;
+	float pressure;
+
+	VecType3D accelerometer;
+	VecType3D gyroscope;
+	VecType3D compass;
 
 } GY80;
 
