@@ -10,6 +10,7 @@
 
 typedef struct {
 
+	unsigned char devid;
 	union {
 		float v[3];
 

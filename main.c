@@ -62,6 +62,7 @@ int main(void) {
 		prussdrv_pru_wait_event(3);
 		prussdrv_pru_clear_event(3, 24);
 		printf("Current Temperature: % 4.1f\n", gy80->temperature);
+		printf("Accelerometer ID: %x\n", gy80->accelerometer.devid);
 	}
 
 	return 0;
