@@ -9,9 +9,9 @@
 #define GY80_H_
 
 typedef struct {
-
-	unsigned char devid;
 	union {
+
+		unsigned char rsvd[12];
 		float v[3];
 
 		struct {
