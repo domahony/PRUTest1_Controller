@@ -1,0 +1,2 @@
+scp -p ../PRUController/Debug/PRUController.out root@192.168.7.2:experiments/pru4/
+scp -p ../PRU_UART/Debug/text.bin root@192.168.7.2:experiments/pru4/pru0.bin 
