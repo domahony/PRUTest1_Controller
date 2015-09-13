@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <prussdrv.h>
 #include <pruss_intc_mapping.h>
+#include <math.h>
 #include "GY80.h"
 
 #define PRU_NUM0 0
@@ -61,9 +62,32 @@ int main(void) {
 	while (1) {
 		prussdrv_pru_wait_event(3);
 		prussdrv_pru_clear_event(3, 24);
+
+		float theta = atan2(gy80->accelerometer.y/1000., gy80->accelerometer.z/1000.);
+		float phi = acos(gy80->accelerometer.z/1000.);
+		/*
+		float phi = acos(gy80->accelerometer.z/1000. /
+				sqrt(((gy80->accelerometer.x/1000.) * (gy80->accelerometer.x/1000.)) +
+				((gy80->accelerometer.y/1000.) * (gy80->accelerometer.y/1000)) +
+				((gy80->accelerometer.z/1000.) * gy80->accelerometer.z/1000.)));
+		*/
+
+		theta = theta * 180./M_PI;
+
+		if (gy80->accelerometer.x < 0 && gy80->accelerometer.y < 0) {
+			theta -= 180.0;
+		}
+
+		if (gy80->accelerometer.x > 0 && gy80->accelerometer.y < 0) {
+			theta += 180.0;
+		}
+
+		phi = phi * 180./M_PI;
+
 		printf("Temp: % 4.1f ", gy80->temperature);
-		printf("Accelerometer X: %+14.6f Y: %+14.6f Z: %+14.6f\n",
+		printf("Accelerometer X: %+11.6f Y: %+11.6f Z: %+11.6f\n",
 				gy80->accelerometer.x, gy80->accelerometer.y, gy80->accelerometer.z);
+		printf(" Theta: %+4.6f Phi: %+4.6f\n", theta, phi);
 	}
 
 	return 0;
