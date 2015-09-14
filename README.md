@@ -1,7 +1,6 @@
 # PRUTest1_GY80
 
-Support for the GY-80 10dof breakout board.
 
-The i2c calls to the sensors run on a BeagleBone Black PRU.
+This is the host controller program for the BBB PRU module that interfaces with the GY80 breakout board.
 
-To be renamed, and refactored, etc.
+The module listens for an event from the PRU, and retrieves the latest sensor readings from shared memory.
