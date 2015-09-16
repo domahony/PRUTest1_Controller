@@ -11,7 +11,7 @@
 typedef struct {
 	union {
 
-		unsigned char rsvd[12];
+		unsigned char rsvd[16];
 		float v[3];
 
 		struct {

@@ -88,6 +88,8 @@ int main(void) {
 		printf("Accelerometer X: %+11.6f Y: %+11.6f Z: %+11.6f\n",
 				gy80->accelerometer.x, gy80->accelerometer.y, gy80->accelerometer.z);
 		printf(" Theta: %+4.6f Phi: %+4.6f\n", theta, phi);
+		printf("Gyroscope X: %+11.6f Y: %+11.6f Z: %+11.6f\n",
+				gy80->gyroscope.x, gy80->gyroscope.y, gy80->gyroscope.z);
 	}
 
 	return 0;
