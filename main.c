@@ -3,9 +3,15 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <prussdrv.h>
 #include <pruss_intc_mapping.h>
 #include <math.h>
+
+#include <unistd.h>
+#include <netdb.h>
+
 #include "GY80.h"
 
 #define PRU_NUM0 0
@@ -40,6 +46,9 @@
  (PRU0_HOSTEN_MASK | PRU1_HOSTEN_MASK | PRU_EVTOUT0_HOSTEN_MASK | PRU_EVTOUT1_HOSTEN_MASK | PRU_EVTOUT3_HOSTEN_MASK) /*Enable PRU0, PRU1, PRU_EVTOUT0 */ \
 }
 
+static int connect_server();
+static int write_data(int sockfd, GY80*);
+
 int main(void) {
 	
 	//tpruss_intc_initdata intc = PRUSS_INTC_INITDATA;
@@ -58,6 +67,8 @@ int main(void) {
 	prussdrv_map_prumem(PRUSS0_PRU0_DATARAM, &pruDataMem);
 
 	GY80 *gy80 = (GY80*)(pruDataMem + 0x888);
+
+	int sockfd = connect_server();
 
 	while (1) {
 		prussdrv_pru_wait_event(3);
@@ -90,7 +101,37 @@ int main(void) {
 		printf(" Theta: %+4.6f Phi: %+4.6f\n", theta, phi);
 		printf("Gyroscope X: %+11.6f Y: %+11.6f Z: %+11.6f\n",
 				gy80->gyroscope.x, gy80->gyroscope.y, gy80->gyroscope.z);
+
+		write_data(sockfd, gy80);
 	}
 
 	return 0;
+}
+
+static int
+connect_server()
+{
+	struct sockaddr_in serv_addr;
+	struct hostent *server = gethostbyname("192.168.7.1");
+
+	memset(&serv_addr, 1, sizeof(serv_addr));
+	int ret = socket(AF_INET, SOCK_STREAM, 0);
+
+	serv_addr.sin_family = AF_INET;
+	memcpy(&serv_addr.sin_addr.s_addr, server->h_addr, server->h_length);
+	serv_addr.sin_port = htons(5204);
+
+	connect(ret, (struct sockaddr*)&serv_addr, sizeof(serv_addr));
+
+	return ret;
+}
+
+static int
+write_data(int sockfd, GY80* gy80)
+{
+	char buf[1024];
+	sprintf(buf, "%+11.6f %+11.6f %+11.6f\n",
+				gy80->accelerometer.x, gy80->accelerometer.y, gy80->accelerometer.z);
+
+	return write(sockfd, buf, strlen(buf));
 }

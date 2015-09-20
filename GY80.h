@@ -26,6 +26,7 @@ typedef struct {
 			float roll;
 		};
 	};
+
 } VecType3D;
 
 
