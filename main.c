@@ -46,8 +46,17 @@
  (PRU0_HOSTEN_MASK | PRU1_HOSTEN_MASK | PRU_EVTOUT0_HOSTEN_MASK | PRU_EVTOUT1_HOSTEN_MASK | PRU_EVTOUT3_HOSTEN_MASK) /*Enable PRU0, PRU1, PRU_EVTOUT0 */ \
 }
 
+#define NSAMPLES 40
+
+typedef struct {
+	float x[NSAMPLES];
+	float y[NSAMPLES];
+	float z[NSAMPLES];
+	int idx;
+} SampleBuffer;
+
 static int connect_server();
-static int write_data(int sockfd, GY80*);
+static int write_data(int sockfd, SampleBuffer*);
 
 int main(void) {
 	
@@ -69,19 +78,25 @@ int main(void) {
 	GY80 *gy80 = (GY80*)(pruDataMem + 0x888);
 
 	int sockfd = connect_server();
+	SampleBuffer b;
+	b.idx = 0;
 
 	while (1) {
 		prussdrv_pru_wait_event(3);
 		prussdrv_pru_clear_event(3, 24);
 
+		b.x[b.idx] = gy80->accelerometer.x;
+		b.y[b.idx] = gy80->accelerometer.y;
+		b.z[b.idx] = gy80->accelerometer.z;
+
+		if (b.idx++ < NSAMPLES) {
+			continue;
+		}
+
+		b.idx = 0;
+
 		float theta = atan2(gy80->accelerometer.y/1000., gy80->accelerometer.z/1000.);
 		float phi = acos(gy80->accelerometer.z/1000.);
-		/*
-		float phi = acos(gy80->accelerometer.z/1000. /
-				sqrt(((gy80->accelerometer.x/1000.) * (gy80->accelerometer.x/1000.)) +
-				((gy80->accelerometer.y/1000.) * (gy80->accelerometer.y/1000)) +
-				((gy80->accelerometer.z/1000.) * gy80->accelerometer.z/1000.)));
-		*/
 
 		theta = theta * 180./M_PI;
 
@@ -102,7 +117,9 @@ int main(void) {
 		printf("Gyroscope X: %+11.6f Y: %+11.6f Z: %+11.6f\n",
 				gy80->gyroscope.x, gy80->gyroscope.y, gy80->gyroscope.z);
 
-		write_data(sockfd, gy80);
+		if (sockfd >= 0) {
+			write_data(sockfd, &b);
+		}
 	}
 
 	return 0;
@@ -121,17 +138,41 @@ connect_server()
 	memcpy(&serv_addr.sin_addr.s_addr, server->h_addr, server->h_length);
 	serv_addr.sin_port = htons(5204);
 
-	connect(ret, (struct sockaddr*)&serv_addr, sizeof(serv_addr));
-
-	return ret;
+	if (!connect(ret, (struct sockaddr*)&serv_addr, sizeof(serv_addr))) {
+		return ret;
+	} else {
+		return -1;
+	}
 }
 
 static int
-write_data(int sockfd, GY80* gy80)
+write_data(int sockfd, SampleBuffer* b)
 {
-	char buf[1024];
-	sprintf(buf, "%+11.6f %+11.6f %+11.6f\n",
-				gy80->accelerometer.x, gy80->accelerometer.y, gy80->accelerometer.z);
 
-	return write(sockfd, buf, strlen(buf));
+	float x = 0, y = 0, z = 0;
+	int i = 0;
+	for (i = 0; i < NSAMPLES; i++) {
+		x += b->x[i];
+		y += b->y[i];
+		z += b->z[i];
+	}
+
+	x = x/NSAMPLES;
+	y = y/NSAMPLES;
+	z = z/NSAMPLES;
+
+	char buf[1024];
+	sprintf(buf, "%11.6f %11.6f %11.6f\n", x,y,z);
+
+	int cnt = 0;
+	while (cnt < strlen(buf)) {
+		int n = write(sockfd, buf + cnt, strlen(buf) - cnt);
+		if (n < 0) {
+			return -1;
+		}
+
+		cnt += n;
+	}
+
+	return cnt;
 }
