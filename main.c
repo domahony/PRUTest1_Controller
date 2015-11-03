@@ -110,12 +110,14 @@ int main(void) {
 
 		phi = phi * 180./M_PI;
 
+		/*
 		printf("Temp: % 4.1f ", gy80->temperature);
 		printf("Accelerometer X: %+11.6f Y: %+11.6f Z: %+11.6f\n",
 				gy80->accelerometer.x, gy80->accelerometer.y, gy80->accelerometer.z);
 		printf(" Theta: %+4.6f Phi: %+4.6f\n", theta, phi);
 		printf("Gyroscope X: %+11.6f Y: %+11.6f Z: %+11.6f\n",
 				gy80->gyroscope.x, gy80->gyroscope.y, gy80->gyroscope.z);
+		*/
 
 		if (sockfd >= 0) {
 			write_data(sockfd, &b);
@@ -129,20 +131,26 @@ static int
 connect_server()
 {
 	struct sockaddr_in serv_addr;
-	struct hostent *server = gethostbyname("192.168.7.1");
+	struct hostent *server = gethostbyname("192.168.7.2");
 
-	memset(&serv_addr, 1, sizeof(serv_addr));
-	int ret = socket(AF_INET, SOCK_STREAM, 0);
+	memset(&serv_addr, 0, sizeof(serv_addr));
+	int ret = socket(AF_INET, SOCK_DGRAM, 0);
+
+	if (ret < 0) {
+		perror("Failed to create socket");
+		return ret;
+	}
 
 	serv_addr.sin_family = AF_INET;
-	memcpy(&serv_addr.sin_addr.s_addr, server->h_addr, server->h_length);
-	serv_addr.sin_port = htons(5204);
+	memcpy(&serv_addr.sin_addr, server->h_addr_list[0], server->h_length);
+	serv_addr.sin_port = htons(0);
 
-	if (!connect(ret, (struct sockaddr*)&serv_addr, sizeof(serv_addr))) {
-		return ret;
-	} else {
+	if (bind(ret, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0 ) {
+		perror("Bind Failed");
 		return -1;
 	}
+
+	return ret;
 }
 
 static int
@@ -164,15 +172,19 @@ write_data(int sockfd, SampleBuffer* b)
 	char buf[1024];
 	sprintf(buf, "%11.6f %11.6f %11.6f\n", x,y,z);
 
-	int cnt = 0;
-	while (cnt < strlen(buf)) {
-		int n = write(sockfd, buf + cnt, strlen(buf) - cnt);
-		if (n < 0) {
-			return -1;
-		}
+	struct hostent *server = gethostbyname("192.168.7.1");
+	struct sockaddr_in servaddr;
 
-		cnt += n;
+	memset(&servaddr, 0, sizeof(servaddr));
+	servaddr.sin_family = AF_INET;
+	servaddr.sin_port = htons(5204);
+	memcpy(&servaddr.sin_addr, server->h_addr_list[0], server->h_length);
+
+	if (sendto(sockfd, buf, strlen(buf), 0, (struct sockaddr*)&servaddr, sizeof(servaddr)) < 0) {
+
+		perror("Failed to send");
+		return 0;
 	}
 
-	return cnt;
+	return 1;
 }
